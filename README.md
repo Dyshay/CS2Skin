@@ -7,13 +7,6 @@ CS Skin is a simple plugin to set Skin weapon on CS2
 - Weapons
 - Knife
 
-# Interface
-
-MySQLMM will expose an interface in `OnMetamodQuery` which can then be queried with `(IMySQLClient*)g_SMAPI->MetaFactory(MYSQLMM_INTERFACE, &ret, NULL);` by other plugins.
-Interface definition can be found in `src/public`.
-
-## Compilation
-
 ### Requirements
 
 - [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master) (build 1219 or higher)
