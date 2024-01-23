@@ -16,12 +16,12 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
     public override string ModuleName => "CsSkin";
     public override string ModuleVersion => "1.0.2";
     public BaseConfig Config { get; set; }
-    private Dictionary<ulong, WeaponInfo> g_PlayersWeapons = new();
+    private Dictionary<ulong, List<WeaponInfo>> g_PlayersWeapons = new();
     private IServiceRepository<WeaponInfo> _usersService;
 
     public void OnConfigParsed(BaseConfig config)
     {
-        Config = new BaseConfig();
+        Config = config;
     }
 
 
@@ -30,6 +30,13 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
         Logger.LogInformation("Plugin loaded");
 
         _usersService = new WeaponServiceRepository(Config.ConnectionString, Config.DatabaseName);
+
+        RegisterListener<Listeners.OnClientAuthorized>((slot, id) =>
+        {
+            var skins = _usersService.Get(id.SteamId64.ToString());
+            g_PlayersWeapons.TryAdd(id.SteamId64,
+                skins != null ? skins.ToList() : new List<WeaponInfo>());
+        });
 
         RegisterListener<Listeners.OnEntityCreated>(entity => { });
 
@@ -41,11 +48,15 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
             Server.NextFrame(() =>
             {
                 Logger.LogInformation(pCEconEntityWeapon.DesignerName);
-                if (pCEconEntityWeapon != null && pCEconEntityWeapon.DesignerName != null &&
-                    pCEconEntityWeapon.DesignerName.Contains("knife"))
+                if (pCEconEntityWeapon != null && pCEconEntityWeapon.DesignerName != null && pCEconEntityWeapon.DesignerName.StartsWith("weapon_"))
                 {
+                    string designerName = pCEconEntityWeapon.DesignerName;
+                    bool isKnife = designerName.Contains("knife") || designerName.Contains("bayonet");
+                    bool isWeapon = designerName.Contains("weapon_") && !isKnife;
+
                     ushort weaponId = pCEconEntityWeapon.AttributeManager.Item.ItemDefinitionIndex;
                     int weaponOwner = (int)pBasePlayerWeapon.OwnerEntity.Index;
+
                     CBasePlayerPawn pBasePlayerPawn =
                         new CBasePlayerPawn(NativeAPI.GetEntityFromIndex(weaponOwner));
 
@@ -53,16 +64,19 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 
                     var playerIndex = (int)pBasePlayerPawn.Controller.Index;
                     var player = Utilities.GetPlayerFromIndex(playerIndex);
-                    if (g_PlayersWeapons.TryGetValue(player.SteamID, out WeaponInfo weaponInfo))
+                    g_PlayersWeapons.TryGetValue(player.SteamID, out List<WeaponInfo> weaponsInfo);
+                    var requestWeapon = weaponsInfo.FirstOrDefault(c => c.DefIndex == weaponId && !isKnife || isKnife && ConstantsWeapon.g_KnivesMap.ContainsValue(designerName));
+                    if (requestWeapon != null)
                     {
+                        var weaponInfo = weaponsInfo.FirstOrDefault(weapon =>
+                            (weaponId == weapon.DefIndex && isWeapon && !isKnife) ||
+                            ConstantsWeapon.g_KnivesMap.ContainsKey(weaponId));
                         pCEconEntityWeapon.FallbackPaintKit = weaponInfo.Paint;
                         pCEconEntityWeapon.FallbackSeed = weaponInfo.Seed;
                         pCEconEntityWeapon.FallbackWear = (float)weaponInfo.Wear;
                         pCEconEntityWeapon.FallbackStatTrak = -1;
 
                         pCEconEntityWeapon.AttributeManager.Item.ItemDefinitionIndex = (ushort)weaponInfo.DefIndex;
-                        
-                        Logger.LogInformation("def index {0}", weaponId);
 
                         pCEconEntityWeapon.AttributeManager.Item.ItemID = 16384;
                         pCEconEntityWeapon.AttributeManager.Item.ItemIDLow = 16384 & 0xFFFFFFFF;
@@ -74,14 +88,8 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
                             skeleton.ModelState.MeshGroupMask = 2;
                         }
 
-                        if (ConstantsWeapon.g_KnivesMap.TryGetValue(weaponId, out string knife_name))
+                        if (ConstantsWeapon.g_KnivesMap.ContainsKey(weaponId))
                         {
-                            if (!pBasePlayerWeapon.IsValid) return;
-                            if (pBasePlayerWeapon.OwnerEntity.Value == null) return;
-                            if (pBasePlayerWeapon.OwnerEntity.Index <= 0) return;
-                            
-                            Logger.LogInformation("knife name: {0}", knife_name);
-
                             Server.ExecuteCommand($"i_subclass_change {weaponInfo.DefIndex} {entity.Index}");
                         }
                     }
@@ -113,55 +121,108 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 
         ulong playerSteamId = player!.SteamID;
 
-        if (ConstantsWeapon.g_KnivesMap.TryGetValue(defIndex, out string? selectedWeaponKnifesName))
+        bool isKnife = ConstantsWeapon.g_KnivesMap.ContainsKey(defIndex);
+        bool isWeapon = ConstantsWeapon.g_WeaponsMap.ContainsKey(defIndex);
+
+
+        if (!player.IsValid || player.Index <= 0) return;
+
+        var skins = _usersService.Get(playerSteamId.ToString()).ToList();
+
+        if (isKnife)
         {
-            if (!player.IsValid || player.Index <= 0) return;
-
-            if (!g_PlayersWeapons.ContainsKey(playerSteamId))
+            var skin = skins.FirstOrDefault(data => data.IsKnife);
+            if (skin != null)
             {
-                var weapon = new WeaponInfo()
+                skin.DefIndex = defIndex;
+                skin.Paint = paintId;
+                skin.Wear = 0.00000001f;
+                skin.Seed = seed;
+                skin.IsKnife = true;
+                skin.steamid = player.SteamID.ToString();
+                _usersService.Update(skin);
+            }
+            else
+            {
+                var newSkin = new WeaponInfo()
                 {
-                    DefIndex = defIndex,
-                    Paint = paintId,
-                    Wear = 0.00000001f,
+                    steamid = playerSteamId.ToString(),
                     Seed = seed,
+                    Wear = 0.00000001f,
                     IsKnife = true,
-                    steamid = player.SteamID.ToString()
+                    DefIndex = defIndex,
+                    Paint = paintId
                 };
-                g_PlayersWeapons.TryAdd(playerSteamId, weapon);
+                _usersService.Create(newSkin);
             }
 
-            if (g_PlayersWeapons.TryGetValue(playerSteamId, out WeaponInfo weaponUser))
+        }
+
+        if (isWeapon)
+        {
+            var skin = skins.FirstOrDefault(data => data.DefIndex == defIndex);
+            if (skin != null)
             {
-                weaponUser.DefIndex = defIndex;
-                weaponUser.Paint = paintId;
-                weaponUser.Wear = 0.00000001f;
-                weaponUser.Seed = seed;
-                weaponUser.IsKnife = true;
-                weaponUser.steamid = player.SteamID.ToString();
+                skin.DefIndex = defIndex;
+                skin.Paint = paintId;
+                skin.Wear = 0.00000001f;
+                skin.Seed = seed;
+                skin.IsKnife = false;
+                skin.steamid = player.SteamID.ToString();
+                _usersService.Update(skin);
             }
-
-            var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons;
-            CCSPlayer_ItemServices service = new(player.PlayerPawn.Value.ItemServices.Handle);
-
-            foreach (var weaponData in weapons.Where(data =>
-                         ConstantsWeapon.g_KnivesMap.ContainsKey(data.Value.AttributeManager.Item.ItemDefinitionIndex)))
+            else
             {
-                if (weaponData.IsValid && weaponData.Value != null)
+                var newSkin = new WeaponInfo()
                 {
-                    if (ConstantsWeapon.g_KnivesMap.ContainsKey(weaponData.Value.AttributeManager.Item
-                            .ItemDefinitionIndex))
+                    steamid = playerSteamId.ToString(),
+                    Seed = seed,
+                    Wear = 0.00000001f,
+                    IsKnife = false,
+                    DefIndex = defIndex,
+                    Paint = paintId
+                };
+                _usersService.Create(newSkin);
+            }
+        }
+
+        g_PlayersWeapons[playerSteamId] = _usersService.Get(playerSteamId.ToString()).ToList();
+
+        var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons;
+        CCSPlayer_ItemServices service = new(player.PlayerPawn.Value.ItemServices.Handle);
+
+        foreach (var weaponData in weapons.Where(data =>
+                     ConstantsWeapon.g_KnivesMap.ContainsKey(data.Value.AttributeManager.Item.ItemDefinitionIndex)))
+        {
+            if (weaponData.IsValid && weaponData.Value != null)
+            {
+                if (ConstantsWeapon.g_KnivesMap.ContainsKey(weaponData.Value.AttributeManager.Item
+                        .ItemDefinitionIndex) || ConstantsWeapon.g_WeaponsMap.ContainsKey(weaponData.Value
+                        .AttributeManager.Item
+                        .ItemDefinitionIndex))
+                {
+                    if (isWeapon)
                     {
-                        service.DropActivePlayerWeapon(weaponData.Value);
+                        player.RemoveItemByDesignerName(weaponData.Value.DesignerName);
+                    }
+
+                    if (isKnife)
+                    {
                         player.RemoveItemByDesignerName("weapon_knife");
                         NativeAPI.IssueClientCommand((int)player.Index - 1, "slot3");
                     }
                 }
             }
+        }
 
-            Logger.LogInformation("gived weapon {0}", selectedWeaponKnifesName);
-            player.GiveNamedItem(selectedWeaponKnifesName);
+        if (ConstantsWeapon.g_WeaponsMap.TryGetValue(defIndex, out string weapon_name))
+        {
+            player.GiveNamedItem(weapon_name);
+        }
+
+        if (ConstantsWeapon.g_KnivesMap.TryGetValue(defIndex, out string knife_name))
+        {
+            player.GiveNamedItem("weapon_knife");
         }
     }
-
 }
