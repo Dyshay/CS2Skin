@@ -45,7 +45,7 @@ public class WeaponServerMysqlRepository : IServiceRepository<WeaponInfo>
     public IEnumerable<WeaponInfo>? Get(string uuid)
     {
         _connection.Open();
-        List<WeaponInfo> skins = _connection.Query<WeaponInfo>($"SELECT * FROM {TableName}").ToList();
+        List<WeaponInfo> skins = _connection.Query<WeaponInfo>($"SELECT * FROM {TableName}").Where(data => data.steamid == uuid).ToList();
         _connection.Close();
         return skins;
     }

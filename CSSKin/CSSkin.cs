@@ -15,7 +15,7 @@ namespace CSSKin;
 public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 {
     public override string ModuleName => "CsSkin";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public BaseConfig Config { get; set; }
     private Dictionary<ulong, List<WeaponInfo>> g_PlayersWeapons = new();
     private IServiceRepository<WeaponInfo> _usersService;
@@ -57,7 +57,6 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 
             Server.NextFrame(() =>
             {
-                Logger.LogInformation(pCEconEntityWeapon.DesignerName);
                 if (pCEconEntityWeapon != null && pCEconEntityWeapon.DesignerName != null &&
                     pCEconEntityWeapon.DesignerName.StartsWith("weapon_"))
                 {
