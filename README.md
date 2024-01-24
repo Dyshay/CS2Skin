@@ -23,8 +23,8 @@ CS2 Skin: A simple plugin for effortless weapon skin customization in Counter-St
 <pre>{
   "ConnectionString": "", //"Server=host;Database=dbName;Uid=userName;Pwd=password;Port=3306;" (For MySQL)
   "MongoDatabaseName": "", // If you use mongoDB
-  "MysqlTableName": "" // MySqlTableName,
-  "DatabaseType": "MYSQL",
+  "MysqlTableName": "", // MySqlTableName
+  "DatabaseType": "MYSQL", // "MYSQL" or "MONGODB"
   "Version": 0  // Don't touch
 }</pre>
 
