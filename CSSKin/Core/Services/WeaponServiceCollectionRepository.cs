@@ -1,13 +1,14 @@
 ﻿using CSSKin.Models;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace CSSKin.Core.Services;
 
-public class WeaponServiceRepository : IServiceRepository<WeaponInfo>
+public class WeaponServiceCollectionRepository : IServiceRepository<WeaponInfo>
 {
     private readonly IMongoCollection<WeaponInfo> mongoCollection;
     
-    public WeaponServiceRepository(string connectionString, string databaseName)
+    public WeaponServiceCollectionRepository(string connectionString, string databaseName)
     {
         var client = new MongoClient(connectionString);
         client.StartSession();
@@ -19,6 +20,8 @@ public class WeaponServiceRepository : IServiceRepository<WeaponInfo>
 
     public WeaponInfo Create(WeaponInfo data)
     {
+        var index = mongoCollection.CountDocuments(new BsonDocument()) + 1;
+        data.Id = index;
         mongoCollection.InsertOne(data);
         return data;
     }
@@ -40,6 +43,6 @@ public class WeaponServiceRepository : IServiceRepository<WeaponInfo>
 
     public void Update(WeaponInfo data)
     {
-        mongoCollection.ReplaceOne(Data => Data._id == data._id, data);
+        mongoCollection.ReplaceOne(Data => Data.Id == data.Id, data);
     }
 }

@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Memory;
 using CSSKin.Core.Configs;
+using CSSKin.Core.Enums;
 using CSSKin.Core.Services;
 using CSSKin.Core.Utilities;
 using CSSKin.Models;
@@ -29,7 +30,16 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
     {
         Logger.LogInformation("Plugin loaded");
 
-        _usersService = new WeaponServiceRepository(Config.ConnectionString, Config.DatabaseName);
+        switch (Config.DbType)
+        {
+            case nameof(DatabaseType.MYSQL):
+                _usersService = new WeaponServerMysqlRepository(Config.ConnectionString, Config.MysqlTableName);
+                break;
+            case nameof(DatabaseType.MONGODB):
+                _usersService = new WeaponServiceCollectionRepository(Config.ConnectionString, Config.MongoDatabaseName);
+                break;
+        }
+
 
         RegisterListener<Listeners.OnClientAuthorized>((slot, id) =>
         {
@@ -48,7 +58,8 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
             Server.NextFrame(() =>
             {
                 Logger.LogInformation(pCEconEntityWeapon.DesignerName);
-                if (pCEconEntityWeapon != null && pCEconEntityWeapon.DesignerName != null && pCEconEntityWeapon.DesignerName.StartsWith("weapon_"))
+                if (pCEconEntityWeapon != null && pCEconEntityWeapon.DesignerName != null &&
+                    pCEconEntityWeapon.DesignerName.StartsWith("weapon_"))
                 {
                     string designerName = pCEconEntityWeapon.DesignerName;
                     bool isKnife = designerName.Contains("knife") || designerName.Contains("bayonet");
@@ -65,7 +76,9 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
                     var playerIndex = (int)pBasePlayerPawn.Controller.Index;
                     var player = Utilities.GetPlayerFromIndex(playerIndex);
                     g_PlayersWeapons.TryGetValue(player.SteamID, out List<WeaponInfo> weaponsInfo);
-                    var requestWeapon = weaponsInfo.FirstOrDefault(c => c.DefIndex == weaponId && !isKnife || isKnife && ConstantsWeapon.g_KnivesMap.ContainsValue(designerName));
+                    var requestWeapon = weaponsInfo.FirstOrDefault(c =>
+                        c.DefIndex == weaponId && !isKnife ||
+                        isKnife && ConstantsWeapon.g_KnivesMap.ContainsValue(designerName));
                     if (requestWeapon != null)
                     {
                         var weaponInfo = weaponsInfo.FirstOrDefault(weapon =>
@@ -155,7 +168,6 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
                 };
                 _usersService.Create(newSkin);
             }
-
         }
 
         if (isWeapon)
@@ -220,7 +232,7 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
             player.GiveNamedItem(weapon_name);
         }
 
-        if (ConstantsWeapon.g_KnivesMap.TryGetValue(defIndex, out string knife_name))
+        if (ConstantsWeapon.g_KnivesMap.ContainsKey(defIndex))
         {
             player.GiveNamedItem("weapon_knife");
         }
