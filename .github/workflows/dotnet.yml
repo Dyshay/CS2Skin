@@ -64,3 +64,8 @@ jobs:
         type: 'zip'
         filename: '${{ env.PROJECT_NAME }}.zip'
         path: ${{ env.OUTPUT_PATH }}
+    - name: Upload Release
+      uses: ncipollo/release-action@v1.12.0
+      with:
+        artifacts: "CSSKin.zip"
+        token: ${{ secrets.TOKEN }}
