@@ -27,4 +27,7 @@ CS2 Skin: A simple plugin for effortless weapon skin customization in Counter-St
   "DatabaseType": "MYSQL",
   "Version": 0  // Don't touch
 }</pre>
-  
+
+### Give Weapon 
+
+- You can use console command : css_skin {defIndex} {paintId} {seed} {wear}
