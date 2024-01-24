@@ -7,13 +7,14 @@ on:
       - '**/README.md'
       - '**/.gitignore'
       - '**/LICENSE'
+      - '.github/**'
   pull_request:
     branches: [ "master" ]
     paths-ignore:
       - '**/README.md'
       - '**/.gitignore'
       - '**/LICENSE'
-
+      - '.github/**'
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   PROJECT_PATH: "./CSSKin/CSSKin.csproj"
