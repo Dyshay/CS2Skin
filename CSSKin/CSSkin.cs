@@ -36,7 +36,8 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
                 _usersService = new WeaponServerMysqlRepository(Config.ConnectionString, Config.MysqlTableName);
                 break;
             case nameof(DatabaseType.MONGODB):
-                _usersService = new WeaponServiceCollectionRepository(Config.ConnectionString, Config.MongoDatabaseName);
+                _usersService =
+                    new WeaponServiceCollectionRepository(Config.ConnectionString, Config.MongoDatabaseName);
                 break;
         }
 
@@ -74,8 +75,8 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 
                     var playerIndex = (int)pBasePlayerPawn.Controller.Index;
                     var player = Utilities.GetPlayerFromIndex(playerIndex);
-                    g_PlayersWeapons.TryGetValue(player.SteamID, out List<WeaponInfo> weaponsInfo);
-                    var requestWeapon = weaponsInfo.FirstOrDefault(c =>
+                    g_PlayersWeapons.TryGetValue(player.SteamID, out List<WeaponInfo>? weaponsInfo);
+                    var requestWeapon = weaponsInfo?.FirstOrDefault(c =>
                         c.DefIndex == weaponId && !isKnife ||
                         isKnife && ConstantsWeapon.g_KnivesMap.ContainsValue(designerName));
                     if (requestWeapon != null)
@@ -112,6 +113,7 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
         RegisterListener<Listeners.OnEntityParentChanged>((entity, parent) => { });
 
         RegisterListener<Listeners.OnEntityDeleted>(entity => { });
+        
         base.Load(hotReload);
     }
 
