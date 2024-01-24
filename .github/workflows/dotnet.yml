@@ -1,18 +1,9 @@
 name: Build
 
 on:
-  push:
-    branches: [ "master" ]
-    paths-ignore:
-      - '**/README.md'
-      - '**/.gitignore'
-      - '**/LICENSE'
-  pull_request:
-    branches: [ "master" ]
-    paths-ignore:
-      - '**/README.md'
-      - '**/.gitignore'
-      - '**/LICENSE'
+  create:
+    tags:
+      - v*
 
 env:
   BUILD_NUMBER: ${{ github.run_number }}
