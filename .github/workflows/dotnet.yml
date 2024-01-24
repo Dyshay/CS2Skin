@@ -16,7 +16,7 @@ on:
 
 env:
   BUILD_NUMBER: ${{ github.run_number }}
-  PROJECT_PATH: "CSSKin.csproj"
+  PROJECT_PATH: "./CSSKin/CSSKin.csproj"
   PROJECT_NAME: "CSSKin"
   OUTPUT_PATH: "./CSSKin"
 
