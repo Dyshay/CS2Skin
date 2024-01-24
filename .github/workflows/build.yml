@@ -34,4 +34,4 @@ jobs:
     - name: Restore
       run: dotnet restore
     - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c CSSKin -o ${{ env.OUTPUT_PATH }
+      run: dotnet build ${{ env.PROJECT_PATH }} -c CSSKin -o ${{ env.OUTPUT_PATH }}
