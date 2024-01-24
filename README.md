@@ -10,7 +10,7 @@ CS2 Skin: A simple plugin for effortless weapon skin customization in Counter-St
 
 - [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master) (build 1219 or higher)
 - [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp/releases/latest) (1.0.153)
-- [MongoDB](https://www.mongodb.com/)
+- [MongoDB](https://www.mongodb.com/) or [MySql]
 - [SkinBridge](https://github.com/Dyshay/CS2Skin/tree/master/CSSKin/SkinBridge/addons)
 
 ### Instructions
