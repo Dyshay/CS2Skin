@@ -1,9 +1,12 @@
 name: Release
 
 on:
-  create:
-    tags:
-      - v*
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
+      - '**/LICENSE'
 
 env:
   BUILD_NUMBER: ${{ github.run_number }}
