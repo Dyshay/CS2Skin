@@ -15,7 +15,7 @@ namespace CSSKin;
 public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 {
     public override string ModuleName => "CsSkin";
-    public override string ModuleVersion => "1.0.3";
+    public override string ModuleVersion => "1.0.4";
     public BaseConfig Config { get; set; }
     private Dictionary<ulong, List<WeaponInfo>> g_PlayersWeapons = new();
     private IServiceRepository<WeaponInfo> _usersService;
@@ -42,11 +42,21 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
         }
 
 
-        RegisterListener<Listeners.OnClientAuthorized>((slot, id) =>
+        RegisterListener<Listeners.OnClientPutInServer>((slot) =>
         {
-            var skins = _usersService.Get(id.SteamId64.ToString());
-            g_PlayersWeapons.TryAdd(id.SteamId64,
-                skins != null ? skins.ToList() : new List<WeaponInfo>());
+            var player = Utilities.GetPlayerFromSlot(slot);
+            var skins = _usersService.Get(player.SteamID.ToString());
+            if (!g_PlayersWeapons.TryAdd(player.SteamID,
+                    skins != null ? skins.ToList() : new List<WeaponInfo>()))
+            {
+                g_PlayersWeapons[player.SteamID] = skins != null ? skins.ToList() : new List<WeaponInfo>();
+            }
+        });
+
+        RegisterListener<Listeners.OnClientDisconnect>(slot =>
+        {
+            var player = Utilities.GetPlayerFromSlot(slot);
+            g_PlayersWeapons[player.SteamID] = new List<WeaponInfo>();
         });
 
         RegisterListener<Listeners.OnEntityCreated>(entity => { });
@@ -113,7 +123,7 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
         RegisterListener<Listeners.OnEntityParentChanged>((entity, parent) => { });
 
         RegisterListener<Listeners.OnEntityDeleted>(entity => { });
-        
+
         base.Load(hotReload);
     }
 
@@ -201,11 +211,9 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
 
         g_PlayersWeapons[playerSteamId] = _usersService.Get(playerSteamId.ToString()).ToList();
 
-        var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons;
-        CCSPlayer_ItemServices service = new(player.PlayerPawn.Value.ItemServices.Handle);
+        var weapons = player.PlayerPawn.Value?.WeaponServices.MyWeapons;
 
-        foreach (var weaponData in weapons.Where(data =>
-                     ConstantsWeapon.g_KnivesMap.ContainsKey(data.Value.AttributeManager.Item.ItemDefinitionIndex)))
+        foreach (var weaponData in weapons)
         {
             if (weaponData.IsValid && weaponData.Value != null)
             {
@@ -216,13 +224,12 @@ public class CSSkin : BasePlugin, IPluginConfig<BaseConfig>
                 {
                     if (isWeapon)
                     {
-                        player.RemoveItemByDesignerName(weaponData.Value.DesignerName);
+                        player.RemoveItemByDesignerName(weaponData.Value.DesignerName, true);
                     }
 
                     if (isKnife)
                     {
-                        player.RemoveItemByDesignerName("weapon_knife");
-                        NativeAPI.IssueClientCommand((int)player.Index - 1, "slot3");
+                        player.RemoveItemByDesignerName("weapon_knife", true);
                     }
                 }
             }
