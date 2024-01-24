@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
+      - '**/LICENSE'
+  pull_request:
+    branches: [ "master" ]
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
+      - '**/LICENSE'
+
+env:
+  BUILD_NUMBER: ${{ github.run_number }}
+  PROJECT_PATH: "CSSkin.csproj"
+  PROJECT_NAME: "CSSkin"
+  OUTPUT_PATH: "./CSSkin"
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Restore
+      run: dotnet restore
+    - name: Build
+      run: dotnet build ${{ env.PROJECT_PATH }} -c CSSkin -o ${{ env.OUTPUT_PATH }}
+
+  publish:
+    if: github.event_name == 'push'
+    permissions: write-all
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Restore
+      run: dotnet restore
+    - name: Build
+      run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
+    - name: Clean files
+      run: |
+        rm -f \
+          ${{ env.OUTPUT_PATH }}/CounterStrikeSharp.API.dll \
+          ${{ env.OUTPUT_PATH }}/McMaster.NETCore.Plugins.dll \
+          ${{ env.OUTPUT_PATH }}/Microsoft.DotNet.PlatformAbstractions.dll \
+          ${{ env.OUTPUT_PATH }}/Microsoft.Extensions.DependencyModel.dll \
+    - name: Zip
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: '${{ env.PROJECT_NAME }}.zip'
+        path: ${{ env.OUTPUT_PATH }}
