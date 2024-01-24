@@ -16,9 +16,9 @@ on:
 
 env:
   BUILD_NUMBER: ${{ github.run_number }}
-  PROJECT_PATH: "CSSkin.csproj"
-  PROJECT_NAME: "CSSkin"
-  OUTPUT_PATH: "./CSSkin"
+  PROJECT_PATH: "CSSKin.csproj"
+  PROJECT_NAME: "CSSKin"
+  OUTPUT_PATH: "./CSSKin"
 
 jobs:
   build:
@@ -34,7 +34,7 @@ jobs:
     - name: Restore
       run: dotnet restore
     - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c CSSkin -o ${{ env.OUTPUT_PATH }}
+      run: dotnet build ${{ env.PROJECT_PATH }} -c CSSKin -o ${{ env.OUTPUT_PATH }}
 
   publish:
     if: github.event_name == 'push'
