@@ -1,7 +1,6 @@
-# CSSkin
+# CS2 Skin
 
-CS Skin is a simple plugin to set Skin weapon on CS2
-
+CS2 Skin: A simple plugin for effortless weapon skin customization in Counter-Strike 2
 # Features
 
 - Weapons
